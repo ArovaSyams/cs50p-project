@@ -150,12 +150,13 @@ def reduce_balance(username, reduce_balance):
                 reduced_balance = float(row["balance"]) - reduce_balance
                 row["balance"] = reduced_balance
             writer.writerow({"username": row["username"], "balance": row["balance"]})
-        
+    # copy and archiving new balance.csv file
     shutil.move(tempfile.name, "database/balance.csv")
 
     dashboard(username, reduced_balance)
 
 def dashboard(username, balance):
+    print("---------------------------------------------------------------")
     print(tabulate([[f"${balance:.2f}"]], headers=["Your Balance"], tablefmt="rounded_grid"))
     print("\n1. Add balance \n2. Reduce balance \n3. Savings \n4. Bills \n5. History \n6. Exit")
     while True:
@@ -181,7 +182,7 @@ def dashboard(username, balance):
                             print("Must input a nominal")
                             
                 case 3:
-                    savings()
+                    savings(username)
                 case 4:
                     bills()
                 case 5:
@@ -194,6 +195,9 @@ def dashboard(username, balance):
         except ValueError:
             print("Must select number between 1 to 6")
 
+
+def savings(username):
+    ...
 
 if __name__ == "__main__":
     main()
