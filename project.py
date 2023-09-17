@@ -2,6 +2,7 @@
 from tabulate import tabulate
 from pyfiglet import Figlet
 from tempfile import NamedTemporaryFile
+import csv
 import shutil
 import csv
 import sys
@@ -17,16 +18,13 @@ def main():
 
     print(f"\nWelcome {username}")
 
-    balance =  show_balance(username)
+    balance =  get_balance(username)
     # print user balance total table
     
     dashboard(username, balance)
     
     
     
-    
-    
-
 # PYPOCKET title app title
 def app_name():
     figlet = Figlet(font="soft")
@@ -94,8 +92,45 @@ def create_username():
         except Exception:
             print("Username exist")
 
+# dashboard
+def dashboard(username, balance):
+    print("\n---------------------------------------------------------------\nDASHBOARD\n---------------------------------------------------------------")
+    print(tabulate([[f"${balance:.2f}"]], headers=["Your Balance"], tablefmt="rounded_grid"))
+    print("\n1. Add balance \n2. Reduce balance \n3. Savings \n4. Exit")
+    while True:
+        try:
+            choice = int(input())
+            match choice:
+                case 1:
+                    while True:
+                        try:
+                            add_balance_inp = float(input("\nAdd balance: $"))
+                            add_balance(username, add_balance_inp)
+                        except ValueError:
+                            print("Must input a nominal")
+                case 2:
+                    while True:
+                        try:
+                            reduce_balance_inp = float(input("\nReduce balance: $"))
+                            if balance - reduce_balance_inp < 0.00:
+                                print("Lack of balance")
+                            else:
+                                reduce_balance(username, reduce_balance_inp)
+                        except ValueError:
+                            print("Must input a nominal")
+                            
+                case 3:
+                    savings(username, balance)
+                case 4:
+                    sys.exit("Have a nice day")
+                case _:
+                    raise ValueError()
+            break
+        except ValueError:
+            print("Please select number between 1 to 4")
+
 # show the user balance
-def show_balance(username):
+def get_balance(username):
     try:
         with open("database/balance.csv") as file:
             reader = csv.DictReader(file)
@@ -155,10 +190,13 @@ def reduce_balance(username, reduce_balance):
 
     dashboard(username, reduced_balance)
 
-def dashboard(username, balance):
-    print("---------------------------------------------------------------")
-    print(tabulate([[f"${balance:.2f}"]], headers=["Your Balance"], tablefmt="rounded_grid"))
-    print("\n1. Add balance \n2. Reduce balance \n3. Savings \n4. Bills \n5. History \n6. Exit")
+# savings dashboard
+def savings(username, balance):
+    savings = get_savings(username)
+    print("\n---------------------------------------------------------------\nSAVINGS\n---------------------------------------------------------------")
+    print(tabulate([[f"${savings:.2f}"]], headers=["Your Savings"], tablefmt="rounded_grid"))
+    print("\n1. Add savings \n2. Reduce savings \n3. Back to dashboard")
+    
     while True:
         try:
             choice = int(input())
@@ -166,38 +204,135 @@ def dashboard(username, balance):
                 case 1:
                     while True:
                         try:
-                            add_balance_inp = float(input("\nAdd balance: $"))
-                            add_balance(username, add_balance_inp)
+                            add_savings_inp = float(input("\nAdd savings: $"))
+                            add_savings(username, balance, add_savings_inp)
                         except ValueError:
                             print("Must input a nominal")
                 case 2:
                     while True:
                         try:
-                            reduce_balance_inp = float(input("\nReduce balance: $"))
-                            if balance - reduce_balance_inp < 0:
-                                print("lack of balance")
+                            reduce_savings_inp = float(input("\nReduce savings: $"))
+                            if savings - reduce_savings_inp < 0.00:
+                                print("Lack of savings")
                             else:
-                                reduce_balance(username, reduce_balance_inp)
+                                reduce_savings(username, reduce_savings_inp)
                         except ValueError:
                             print("Must input a nominal")
                             
                 case 3:
-                    savings(username)
-                case 4:
-                    bills()
-                case 5:
-                    history()
-                case 6:
-                    sys.exit("Have a nice day")
+                    dashboard(username, balance)
                 case _:
                     raise ValueError()
             break
         except ValueError:
-            print("Must select number between 1 to 6")
+            print("Must select number between 1 to 3")
+    
 
 
-def savings(username):
-    ...
+def get_savings(username):
+    try:
+        with open("database/savings.csv") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if username == row["username"]:
+                    return float(row['savings'])
+            raise ValueError()
+        
+    except FileNotFoundError:
+        with open("database/savings.csv", "a") as file:
+            writer = csv.DictWriter(file, fieldnames=["username", "savings"])
+            writer.writeheader()
+            writer.writerow({"username": username, "savings": float(0.00)})
+            return float(0.00)
+    
+    except ValueError:
+        with open("database/savings.csv", "a") as file:
+            writer = csv.DictWriter(file, fieldnames=["username", "savings"])
+            writer.writerow({"username": username, "savings": float(0.00)})
+            return float(0.00)
+
+def add_savings(username, balance, add_savings):
+    # get available balance
+    with open("database/balance.csv") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row["username"] == username:
+                get_balance = float(row["balance"])
+
+    if get_balance - add_savings < 0:
+        print("Error message: Your savings amount input is bigger than your balance")
+        savings(username, balance)
+    else:
+        # make temporary file
+        balance_tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
+
+        # reduce balance amount
+        with open("database/balance.csv", "r", newline="") as csv_file, balance_tempfile:
+            reader = csv.DictReader(csv_file)
+            writer = csv.DictWriter(balance_tempfile, fieldnames=["username", "balance"])
+            
+            writer.writeheader()
+            for row in reader:
+                if row["username"] == username:
+                    reduced_balance = get_balance - add_savings
+                    row["balance"] = reduced_balance
+                writer.writerow({"username": row["username"], "balance": row["balance"]})
+
+        # copying file and archive for the new one / replace file
+        shutil.move(balance_tempfile.name, "database/balance.csv")
+
+        savings_tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
+        with open("database/savings.csv", "r", newline="") as csv_file, savings_tempfile:
+            reader = csv.DictReader(csv_file)
+            writer = csv.DictWriter(savings_tempfile, fieldnames=["username", "savings"])
+            
+            writer.writeheader()
+            for row in reader:
+                if row["username"] == username:
+                    added_savings = float(row["savings"]) + add_savings
+                    row["savings"] = added_savings
+                writer.writerow({"username": row["username"], "savings": row["savings"]})
+
+        # copying file and archive for the new one / replace file
+        shutil.move(savings_tempfile.name, "database/savings.csv")
+
+        savings(username, reduced_balance)
+
+def reduce_savings(username, reduce_savings):
+    # make temporary file
+    balance_tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
+
+    # reduce balance amount
+    with open("database/balance.csv", "r", newline="") as csv_file, balance_tempfile:
+        reader = csv.DictReader(csv_file)
+        writer = csv.DictWriter(balance_tempfile, fieldnames=["username", "balance"])
+        
+        writer.writeheader()
+        for row in reader:
+            if row["username"] == username:
+                added_balance = float(row["balance"]) + reduce_savings
+                row["balance"] = added_balance
+            writer.writerow({"username": row["username"], "balance": row["balance"]})
+
+    # copying file and archive for the new one / replace file
+    shutil.move(balance_tempfile.name, "database/balance.csv")
+
+    savings_tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
+    with open("database/savings.csv", "r", newline="") as csv_file, savings_tempfile:
+        reader = csv.DictReader(csv_file)
+        writer = csv.DictWriter(savings_tempfile, fieldnames=["username", "savings"])
+        
+        writer.writeheader()
+        for row in reader:
+            if row["username"] == username:
+                reduced_savings = float(row["savings"]) - reduce_savings
+                row["savings"] = reduced_savings
+            writer.writerow({"username": row["username"], "savings": row["savings"]})
+
+    # copying file and archive for the new one / replace file
+    shutil.move(savings_tempfile.name, "database/savings.csv")
+
+    savings(username, added_balance)
 
 if __name__ == "__main__":
     main()
