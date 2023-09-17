@@ -18,11 +18,10 @@ def main():
 
     print(f"\nWelcome {username}")
 
+    # get the balance amount
     balance =  get_balance(username)
-    # print user balance total table
     
     dashboard(username, balance)
-    
     
     
 # PYPOCKET title app title
@@ -43,9 +42,9 @@ def user_authentication(username):
                 if row[0] == username: 
                     return row[0]
                 # else return for exception 
-            raise Exception()
+            raise ValueError()
                 
-    except Exception:
+    except ValueError:
         # print when username not found then ask want to create new one or not
         print("\nUsername not found, do you want to create new one?\n1. No, Try input again \n2. Yes\n3. Maybe later")
         while True:
@@ -73,12 +72,16 @@ def create_username():
     while True:
         try:
             username = input("Create your username: ")
+
+            # validate username with regular expresion, cannot add a spacing
             if re.search(r"^\w+$", username):
                 
+                # if username.csv exist
                 if os.path.exists("database/username.csv"):
                     with open("database/username.csv") as file:
                         reader = csv.reader(file)
                         for row in reader:
+                            # check if username exist then raise exception
                             if username == row[0]:
                                 raise Exception()
 
@@ -86,9 +89,12 @@ def create_username():
                     writer = csv.writer(file)
                     writer.writerow([username])
                 return username
+            
+            # if not based on regex than try input again
             else:
                 print("username must contain alphabetic or number and non-space")
             
+        # exception raised then try input again
         except Exception:
             print("Username exist")
 
@@ -152,7 +158,6 @@ def get_balance(username):
             writer.writerow({"username": username, "balance": float(0.00)})
             return float(0.00)
 
- 
 # add balance
 def add_balance(username, add_balance):
     tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
@@ -170,8 +175,9 @@ def add_balance(username, add_balance):
         
     shutil.move(tempfile.name, "database/balance.csv")
 
-    dashboard(username, added_balance)
+    return dashboard(username, added_balance)
 
+# reduce balance
 def reduce_balance(username, reduce_balance):
     tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
 
@@ -188,7 +194,8 @@ def reduce_balance(username, reduce_balance):
     # copy and archiving new balance.csv file
     shutil.move(tempfile.name, "database/balance.csv")
 
-    dashboard(username, reduced_balance)
+    return dashboard(username, reduced_balance)
+
 
 # savings dashboard
 def savings(username, balance):
@@ -227,8 +234,7 @@ def savings(username, balance):
         except ValueError:
             print("Must select number between 1 to 3")
     
-
-
+# show the user savings amount
 def get_savings(username):
     try:
         with open("database/savings.csv") as file:
@@ -251,6 +257,7 @@ def get_savings(username):
             writer.writerow({"username": username, "savings": float(0.00)})
             return float(0.00)
 
+# add a savings and reduce the balance
 def add_savings(username, balance, add_savings):
     # get available balance
     with open("database/balance.csv") as file:
@@ -296,8 +303,9 @@ def add_savings(username, balance, add_savings):
         # copying file and archive for the new one / replace file
         shutil.move(savings_tempfile.name, "database/savings.csv")
 
-        savings(username, reduced_balance)
+        return savings(username, reduced_balance)
 
+# reduce savings and add the balance
 def reduce_savings(username, reduce_savings):
     # make temporary file
     balance_tempfile = NamedTemporaryFile("w+t", newline="", delete=False)
@@ -332,7 +340,7 @@ def reduce_savings(username, reduce_savings):
     # copying file and archive for the new one / replace file
     shutil.move(savings_tempfile.name, "database/savings.csv")
 
-    savings(username, added_balance)
+    return savings(username, added_balance)
 
 if __name__ == "__main__":
     main()
