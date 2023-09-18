@@ -2,6 +2,7 @@
 from tabulate import tabulate
 from pyfiglet import Figlet
 from tempfile import NamedTemporaryFile
+from datetime import date
 import csv
 import shutil
 import csv
@@ -107,7 +108,7 @@ def dashboard(username, balance):
     # show the balance table with tabulate
     print(tabulate([[f"${balance:.2f}"]], headers=["Your Balance"], tablefmt="rounded_grid"))
     # print the call to action selection
-    print("\n1. Add balance \n2. Reduce balance \n3. Savings \n4. Exit")
+    print("\n1. Add balance \n2. Reduce balance \n3. Savings \n4. Histories \n5. Exit")
     while True:
         try:
             # input the user selection
@@ -144,7 +145,9 @@ def dashboard(username, balance):
                     # if choose 3 then direct to savings page
                     savings(username, balance)
                 case 4:
-                    # 4 for exit
+                    histories(username, balance)
+                case 5:
+                    # 5 for exit
                     sys.exit("Have a nice day")
                 case _:
                     raise ValueError()
@@ -203,6 +206,17 @@ def add_balance(username, add_balance):
     # copying file and archive the new one / replace balance.csv
     shutil.move(tempfile.name, "database/balance.csv")
 
+    # add to history for adding balance
+    with open("database/histories.csv", "a") as file:
+        writer = csv.DictWriter(file, fieldnames=["username", "type", "nominal", "date"])
+
+        writer.writerow({
+            "username": username,
+            "type": "Balance",
+            "nominal": f"+ ${add_balance}",
+            "date": date.today()
+        })
+
     return dashboard(username, added_balance)
 
 # reduce balance
@@ -226,6 +240,17 @@ def reduce_balance(username, reduce_balance):
 
     # copying file and archive the new one / replace balance.csv
     shutil.move(tempfile.name, "database/balance.csv")
+
+    # add history for reduce the balance
+    with open("database/histories.csv", "a") as file:
+        writer = csv.DictWriter(file, fieldnames=["username", "type", "nominal", "date"])
+
+        writer.writerow({
+            "username": username,
+            "type": "Balance",
+            "nominal": f"- ${reduce_balance}",
+            "date": date.today()
+        })
 
     return dashboard(username, reduced_balance)
 
@@ -360,7 +385,18 @@ def add_savings(username, balance, add_savings):
         # copying file and archive for the new one / replace savings.csv file
         shutil.move(savings_tempfile.name, "database/savings.csv")
 
-        # than return to savings 
+        # add history for add the savings
+        with open("database/histories.csv", "a") as file:
+            writer = csv.DictWriter(file, fieldnames=["username", "type", "nominal", "date"])
+
+            writer.writerow({
+                "username": username,
+                "type": "Savings",
+                "nominal": f"+ ${add_savings}",
+                "date": date.today()
+            })
+
+        # then return to savings 
         return savings(username, reduced_balance)
 
 # reduce savings and add the balance
@@ -405,8 +441,51 @@ def reduce_savings(username, reduce_savings):
     # copying file and archive for the new one / replace savings.csv file
     shutil.move(savings_tempfile.name, "database/savings.csv")
 
+    # add history for reduce the savings
+    with open("database/histories.csv", "a") as file:
+        writer = csv.DictWriter(file, fieldnames=["username", "type", "nominal", "date"])
+
+        writer.writerow({
+            "username": username,
+            "type": "Savings",
+            "nominal": f"- ${reduce_savings}",
+            "date": date.today()
+        })
+
     # return savings
     return savings(username, added_balance)
+
+# show histories page
+def histories(username, balance):
+    histories = get_histories(username)
+
+    print("\n---------------------------------------------------------------\nHISTORIES\n---------------------------------------------------------------")
+
+    # show the balance table with tabulate
+    print(tabulate(histories, headers=["Type", "Nominal", "Date"], tablefmt="rounded_grid"))
+
+    while True:
+        try:
+            input_user = int(input("\n1. Back to dashboard\n"))
+
+            if input_user == 1:
+                dashboard(username, balance)
+            else:
+                raise ValueError()
+        except ValueError:
+            print("Just have 1 choice")
+
+def get_histories(username):
+    histories = []
+
+    with open("database/histories.csv") as file:
+        reader = csv.DictReader(file)
+
+        for row in reader:
+            if username == row["username"]:
+                histories.append([row["type"], row["nominal"], row["date"]])
+    
+    return histories
 
 if __name__ == "__main__":
     main()
