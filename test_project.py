@@ -1,4 +1,4 @@
-from project import user_authentication, get_balance, get_savings
+from project import user_authentication, get_balance, get_savings, get_histories
 import pytest
 
 def test_user_authentication():
@@ -11,3 +11,6 @@ def test_get_balance():
 
 def test_get_savings():
     assert get_savings("arova") == 80
+
+def test_get_histories():
+    assert get_histories("arova") == [["arova", "asd", "dsa"]]
