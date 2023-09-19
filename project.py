@@ -254,7 +254,6 @@ def reduce_balance(username, reduce_balance):
 
     return dashboard(username, reduced_balance)
 
-
 # savings dashboard
 def savings(username, balance):
     # call savings and get savings amount
@@ -475,6 +474,7 @@ def histories(username, balance):
         except ValueError:
             print("Just have 1 choice")
 
+# get user's histories
 def get_histories(username):
     histories = []
 
