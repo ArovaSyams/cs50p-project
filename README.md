@@ -1,6 +1,6 @@
 # PYPOCKET
 ### Video Demo: 
-https://youtube.com/arovasyams
+[https://youtube.com/arovasyams](https://youtu.be/LMTSn9M_uj0?si=4m6cVpVIdJaFwTBL)
 ### Description:
 Many students have the same problem case about their monthly expenses, sometimes unconsciosly their money   s gone because they can not track their expenses, so they can not manage their money properly. especially to have a monthly savings, many of students keep their savings in a same bank account with their monthly pockets, it's no problem. the problem is it will be mixed with monthly allowance and they will forget the savings nominal. 
 
